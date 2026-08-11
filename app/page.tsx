@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type OfficeStatus = "office" | "away" | "unset";
 
@@ -92,15 +92,6 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedDate]);
 
-  const stats = useMemo(() => {
-    const values = Object.values(plans);
-    return {
-      office: values.filter((plan) => plan.office === "office").length,
-      away: values.filter((plan) => plan.office === "away").length,
-      planned: values.filter((plan) => plan.work.trim() || plan.city).length,
-    };
-  }, [plans]);
-
   const months = activeMonth === "all"
     ? MONTHS
     : MONTHS.filter((month) => month.key === activeMonth);
@@ -176,23 +167,21 @@ export default function Home() {
             </button>
           </div>
 
-          <section className="stats" aria-label="行程統計">
-            <div className="stat-card stat-office">
-              <span className="stat-icon" aria-hidden="true">●</span>
-              <div><strong>{stats.office}</strong><span>天會到公司</span></div>
-            </div>
-            <div className="stat-card stat-away">
-              <span className="stat-icon" aria-hidden="true">●</span>
-              <div><strong>{stats.away}</strong><span>天不在公司</span></div>
-            </div>
-            <div className="stat-card stat-planned">
-              <span className="stat-icon" aria-hidden="true">✦</span>
-              <div><strong>{stats.planned}</strong><span>天已有安排</span></div>
-            </div>
-            <div className="save-status" aria-live="polite">
-              <span className={savedPulse ? "save-dot pulse" : "save-dot"} />
-              {savedPulse ? "已儲存變更" : "自動儲存在此瀏覽器"}
-            </div>
+          <section className="hero-feature" aria-label="顧問工作安排說明">
+            <img src="/og.png" alt="瓜瓜的工作行程，2026 年 8 月 12 日至 2027 年 8 月 31 日" />
+            <aside className="consultant-note">
+              <span className="note-label">顧問支援 · 機動安排</span>
+              <h2>依公司需求，彈性投入</h2>
+              <p>擔任公司顧問期間，沒有固定的工作時段限制；會依專案進度與實際需求，機動安排工作內容與地點。</p>
+              <div className="weekly-rhythm">
+                <strong>每週 1–2 天</strong>
+                <span>原則上安排到辦公室，實際日期以月曆中的紅色標示為準。</span>
+              </div>
+              <div className="save-status" aria-live="polite">
+                <span className={savedPulse ? "save-dot pulse" : "save-dot"} />
+                {savedPulse ? "已儲存變更" : "行程自動儲存在此瀏覽器"}
+              </div>
+            </aside>
           </section>
         </div>
       </header>
