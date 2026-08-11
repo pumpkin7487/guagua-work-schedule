@@ -167,21 +167,14 @@ export default function Home() {
             </button>
           </div>
 
-          <section className="hero-feature" aria-label="顧問工作安排說明">
-            <img src="/og.png" alt="瓜瓜的工作行程，2026 年 8 月 12 日至 2027 年 8 月 31 日" />
-            <aside className="consultant-note">
-              <span className="note-label">顧問支援 · 機動安排</span>
-              <h2>依公司需求，彈性投入</h2>
-              <p>擔任公司顧問期間，沒有固定的工作時段限制；會依專案進度與實際需求，機動安排工作內容與地點。</p>
-              <div className="weekly-rhythm">
-                <strong>每週 1–2 天</strong>
-                <span>原則上安排到辦公室，實際日期以月曆中的紅色標示為準。</span>
-              </div>
-              <div className="save-status" aria-live="polite">
-                <span className={savedPulse ? "save-dot pulse" : "save-dot"} />
-                {savedPulse ? "已儲存變更" : "行程自動儲存在此瀏覽器"}
-              </div>
-            </aside>
+          <section className="support-list" aria-label="工作支援方式">
+            <div><span>01</span><strong>線上隨時支援</strong></div>
+            <div><span>02</span><strong>在台北的日期，可機動安排實體工作</strong></div>
+            <div><span>03</span><strong>透過 WeChat 預先交代、交辦</strong></div>
+            <div className="save-status" aria-live="polite">
+              <span className={savedPulse ? "save-dot pulse" : "save-dot"} />
+              {savedPulse ? "已儲存變更" : "行程自動儲存在此瀏覽器"}
+            </div>
           </section>
         </div>
       </header>
@@ -253,7 +246,7 @@ export default function Home() {
                         </span>
                         {plan?.city && <span className="day-city">{plan.city}</span>}
                         {plan?.work && <span className="day-work">{plan.work}</span>}
-                        {!plan && <span className="add-hint">＋</span>}
+                        {!plan && <span className="add-hint">＋ 填寫縣市／工作</span>}
                       </button>
                     );
                   })}
@@ -272,7 +265,7 @@ export default function Home() {
             <button className="close-button" type="button" onClick={() => setSelectedDate(null)} aria-label="關閉編輯視窗">×</button>
             <div className="modal-date-badge">{selectedDate.slice(5, 7)} / {selectedDate.slice(8, 10)}</div>
             <div className="modal-heading">
-              <span>編輯當日安排</span>
+              <span>填寫這一格</span>
               <h2 id="editor-title">{displayDate(selectedDate)}</h2>
             </div>
 
@@ -292,26 +285,23 @@ export default function Home() {
             </fieldset>
 
             <div className="form-group">
-              <label htmlFor="city">人在哪個縣市？</label>
-              <div className="select-wrap">
-                <select id="city" value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })}>
-                  <option value="">請選擇縣市</option>
-                  {CITIES.map((city) => <option key={city}>{city}</option>)}
-                </select>
-              </div>
+              <label htmlFor="city">縣市</label>
+              <input id="city" list="city-options" value={draft.city} maxLength={12} onChange={(event) => setDraft({ ...draft, city: event.target.value })} placeholder="例如：臺北市" />
+              <datalist id="city-options">
+                {CITIES.map((city) => <option key={city} value={city} />)}
+              </datalist>
             </div>
 
             <div className="form-group">
-              <label htmlFor="work">當天的工作內容／學校</label>
-              <textarea id="work" value={draft.work} maxLength={200} onChange={(event) => setDraft({ ...draft, work: event.target.value })} rows={4} placeholder="例如：師大附中研習、下午回公司與 Jerry 討論…" />
-              <span className="character-count">{draft.work.length} / 200</span>
+              <label htmlFor="work">簡要工作內容</label>
+              <input id="work" value={draft.work} maxLength={60} onChange={(event) => setDraft({ ...draft, work: event.target.value })} placeholder="例如：師大附中研習／公司會議" />
             </div>
 
             <div className="modal-actions">
               <button className="clear-button" type="button" onClick={clearPlan}>清除當日</button>
               <div>
                 <button className="cancel-button" type="button" onClick={() => setSelectedDate(null)}>取消</button>
-                <button className="save-button" type="button" onClick={savePlan}>儲存安排</button>
+                <button className="save-button" type="button" onClick={savePlan}>填入行事曆</button>
               </div>
             </div>
           </section>

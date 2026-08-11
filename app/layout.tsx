@@ -10,21 +10,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "瓜瓜的工作行程",
-    description: "瓜瓜的顧問工作行程，依公司需求機動安排，原則上每週到辦公室 1 至 2 天。",
+    description: "瓜瓜的工作行程：線上隨時支援，台北日期可機動安排實體工作，並透過 WeChat 預先交辦。",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
       title: "瓜瓜的工作行程",
-      description: "顧問工作採機動安排，讓 Jerry 一目瞭然地確認到公司日期、工作內容與所在縣市。",
+      description: "讓 Jerry 一目瞭然地確認瓜瓜所在縣市、工作內容與到公司日期。",
       type: "website",
       images: [{ url: ogImage, width: 1733, height: 908, alt: "瓜瓜的工作行程" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "瓜瓜的工作行程",
-      description: "顧問工作採機動安排，讓 Jerry 一目瞭然地確認到公司日期、工作內容與所在縣市。",
+      description: "讓 Jerry 一目瞭然地確認瓜瓜所在縣市、工作內容與到公司日期。",
       images: [ogImage],
     },
   };
