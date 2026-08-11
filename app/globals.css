@@ -54,19 +54,19 @@ button { color: inherit; }
 .hero-inner { position: relative; z-index: 1; max-width: 1480px; margin: 0 auto; padding: 42px 40px 26px; }
 .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 11px; font-weight: 800; letter-spacing: .2em; color: #d7c189; }
 .eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: #e0bd6d; box-shadow: 0 0 0 4px rgba(224,189,109,.14); }
-.title-row { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-top: 17px; }
+.title-row { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-top: 17px; }
 .title-row h1 { margin: 0; font-family: "Noto Serif TC", "Songti TC", serif; font-size: clamp(32px, 4vw, 54px); font-weight: 700; letter-spacing: .015em; }
 .title-row p { margin: 8px 0 0; color: #c9d5d0; letter-spacing: .09em; font-size: 14px; }
-.title-actions { display: flex; align-items: center; gap: 9px; }
+.title-actions { display: flex; align-items: flex-start; gap: 9px; }
 .export-button { border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1); color: white; border-radius: 10px; padding: 11px 17px; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px); }
 .export-button:hover { background: rgba(255,255,255,.18); }
 .export-button span { color: #e2c579; margin-right: 5px; }
-.editor-access { position: relative; }
+.editor-access { display: flex; flex-direction: column; align-items: flex-end; }
 .editor-button { border: 1px solid rgba(255,255,255,.28); border-radius: 10px; padding: 11px 15px; color: white; background: rgba(255,255,255,.1); font-size: 12px; font-weight: 800; cursor: pointer; }
 .editor-button:hover { background: rgba(255,255,255,.18); }
 .editor-button.active { border-color: rgba(255,155,137,.65); background: rgba(197,63,52,.24); }
 .editor-button.active span { color: #ff9b89; }
-.password-panel { position: absolute; top: calc(100% + 9px); right: 0; z-index: 40; width: 260px; padding: 16px; border: 1px solid #d8d8d2; border-radius: 11px; color: var(--ink); background: #fffefa; box-shadow: 0 18px 40px rgba(3,24,18,.3); }
+.password-panel { width: 260px; margin-top: 9px; padding: 16px; border: 1px solid #d8d8d2; border-radius: 11px; color: var(--ink); background: #fffefa; box-shadow: 0 18px 40px rgba(3,24,18,.3); }
 .password-panel label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 800; }
 .password-panel input { width: 100%; padding: 10px 11px; border: 1px solid #d4d8d2; border-radius: 8px; outline: none; }
 .password-panel input:focus { border-color: #59967e; box-shadow: 0 0 0 3px rgba(31,106,82,.09); }
@@ -192,13 +192,13 @@ button.day-cell:hover .add-hint { opacity: 1; }
 
 @media (max-width: 640px) {
   .hero-inner { padding: 28px 18px 22px; }
-  .title-row { align-items: flex-start; }
+  .title-row { align-items: stretch; flex-direction: column; }
   .title-row h1 { font-size: 31px; line-height: 1.2; }
-  .title-actions { align-items: flex-end; flex-direction: column-reverse; }
+  .title-actions { align-items: flex-start; flex-direction: row; justify-content: flex-end; width: 100%; }
   .export-button { flex: 0 0 auto; padding: 9px 11px; font-size: 0; }
   .export-button span { margin: 0; font-size: 19px; }
   .editor-button { padding: 9px 10px; font-size: 10px; }
-  .password-panel { position: fixed; top: 122px; right: 18px; left: 18px; width: auto; }
+  .password-panel { width: min(260px, calc(100vw - 36px)); }
   .support-list { grid-template-columns: 1fr; margin-top: 21px; }
   .support-list > div { min-height: 58px; padding: 12px 15px; }
   .toolbar-wrap { padding: 0 18px; }

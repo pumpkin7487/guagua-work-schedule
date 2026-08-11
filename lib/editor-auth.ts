@@ -12,5 +12,5 @@ function safeEqual(a: string, b: string) {
 export function isEditorRequest(request: Request) {
   const expected = (env as unknown as { EDITOR_PASSWORD?: string }).EDITOR_PASSWORD ?? "";
   const supplied = request.headers.get("x-editor-password") ?? "";
-  return expected.length >= 8 && safeEqual(supplied, expected);
+  return expected.length >= 4 && safeEqual(supplied, expected);
 }
