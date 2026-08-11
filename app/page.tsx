@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 type OfficeStatus = "office" | "away" | "unset";
 
@@ -12,8 +12,8 @@ type DayPlan = {
 
 type Plans = Record<string, DayPlan>;
 
-const STORAGE_KEY = "jerry-office-calendar-2026";
 const START_DATE = "2026-08-12";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 const MONTHS = Array.from({ length: 13 }, (_, index) => {
   const monthIndex = 7 + index;
   const year = 2026 + Math.floor(monthIndex / 12);
@@ -56,32 +56,42 @@ function csvCell(value: string) {
 
 export default function Home() {
   const [plans, setPlans] = useState<Plans>({});
-  const [loaded, setLoaded] = useState(false);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [draft, setDraft] = useState<DayPlan>(emptyPlan());
   const [activeMonth, setActiveMonth] = useState<string | "all">("all");
   const [filter, setFilter] = useState<OfficeStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [savedPulse, setSavedPulse] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [passwordDraft, setPasswordDraft] = useState("");
+  const [editorPassword, setEditorPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const isEditor = Boolean(editorPassword);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) setPlans(JSON.parse(stored) as Plans);
-    } catch {
-      // If browser storage is unavailable, the calendar still works for this visit.
-    }
-    setLoaded(true);
+    let active = true;
+    const loadPlans = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/plans`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json() as { plans?: Plans };
+        if (active && data.plans) setPlans(data.plans);
+      } finally {
+        if (active) setLoadingPlans(false);
+      }
+    };
+    void loadPlans();
+    const timer = window.setInterval(loadPlans, 5000);
+    window.addEventListener("focus", loadPlans);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", loadPlans);
+    };
   }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(plans));
-    } catch {
-      // Keep edits available in memory when storage is unavailable.
-    }
-  }, [plans, loaded]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -97,32 +107,76 @@ export default function Home() {
     : MONTHS.filter((month) => month.key === activeMonth);
 
   function openEditor(key: string) {
+    if (!isEditor) {
+      setLoginOpen(true);
+      return;
+    }
     setSelectedDate(key);
     setDraft(plans[key] ? { ...plans[key] } : emptyPlan());
   }
 
+  async function unlockEditor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/editor`, {
+        method: "POST",
+        headers: { "x-editor-password": passwordDraft },
+      });
+      if (!response.ok) {
+        setAuthError("密碼不正確，請再試一次");
+        return;
+      }
+      setEditorPassword(passwordDraft);
+      setPasswordDraft("");
+      setLoginOpen(false);
+    } catch {
+      setAuthError("目前無法驗證，請稍後再試");
+    }
+  }
+
+  async function persistPlan(plan: DayPlan) {
+    if (!selectedDate || !editorPassword) return;
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/plans`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-editor-password": editorPassword,
+        },
+        body: JSON.stringify({ date: selectedDate, ...plan }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) {
+        if (response.status === 401) setEditorPassword("");
+        setSaveError(data.error ?? "無法儲存，請稍後再試");
+        return;
+      }
+      const shouldKeep = plan.office !== "unset" || plan.work.trim() || plan.city.trim();
+      setPlans((current) => {
+        const next = { ...current };
+        if (shouldKeep) next[selectedDate] = { ...plan, city: plan.city.trim(), work: plan.work.trim() };
+        else delete next[selectedDate];
+        return next;
+      });
+      setSelectedDate(null);
+      setSavedPulse(true);
+      window.setTimeout(() => setSavedPulse(false), 1800);
+    } catch {
+      setSaveError("網路連線失敗，行程尚未儲存");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   function savePlan() {
-    if (!selectedDate) return;
-    const shouldKeep = draft.office !== "unset" || draft.work.trim() || draft.city;
-    setPlans((current) => {
-      const next = { ...current };
-      if (shouldKeep) next[selectedDate] = { ...draft, work: draft.work.trim() };
-      else delete next[selectedDate];
-      return next;
-    });
-    setSelectedDate(null);
-    setSavedPulse(true);
-    window.setTimeout(() => setSavedPulse(false), 1600);
+    void persistPlan(draft);
   }
 
   function clearPlan() {
-    if (!selectedDate) return;
-    setPlans((current) => {
-      const next = { ...current };
-      delete next[selectedDate];
-      return next;
-    });
-    setSelectedDate(null);
+    void persistPlan(emptyPlan());
   }
 
   function exportCsv() {
@@ -156,15 +210,34 @@ export default function Home() {
     <main>
       <header className="hero">
         <div className="hero-inner">
-          <div className="eyebrow"><span className="eyebrow-dot" /> GUAGUA · WORK SCHEDULE</div>
+          <div className="eyebrow"><span className="eyebrow-dot" /> ACETEK · WORK SCHEDULE</div>
           <div className="title-row">
             <div>
               <h1>瓜瓜的工作行程</h1>
               <p>2026 年 8 月 12 日 — 2027 年 8 月 31 日</p>
             </div>
-            <button className="export-button" type="button" onClick={exportCsv}>
-              <span aria-hidden="true">↓</span> 匯出 CSV
-            </button>
+            <div className="title-actions">
+              <button className="export-button" type="button" onClick={exportCsv}>
+                <span aria-hidden="true">↓</span> 匯出 CSV
+              </button>
+              <div className="editor-access">
+                <button className={isEditor ? "editor-button active" : "editor-button"} type="button" onClick={() => {
+                  if (isEditor) setEditorPassword("");
+                  else setLoginOpen((current) => !current);
+                  setAuthError("");
+                }}>
+                  <span aria-hidden="true">{isEditor ? "●" : "⌑"}</span> {isEditor ? "編輯模式 · 點此鎖定" : "輸入密碼"}
+                </button>
+                {loginOpen && !isEditor && (
+                  <form className="password-panel" onSubmit={unlockEditor}>
+                    <label htmlFor="editor-password">編輯密碼</label>
+                    <input id="editor-password" type="password" value={passwordDraft} onChange={(event) => setPasswordDraft(event.target.value)} autoFocus autoComplete="current-password" placeholder="輸入密碼" />
+                    {authError && <span className="form-error">{authError}</span>}
+                    <button type="submit">解鎖編輯</button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
 
           <section className="support-list" aria-label="工作支援方式">
@@ -173,7 +246,7 @@ export default function Home() {
             <div><span>03</span><strong>透過 WeChat 預先交代、交辦</strong></div>
             <div className="save-status" aria-live="polite">
               <span className={savedPulse ? "save-dot pulse" : "save-dot"} />
-              {savedPulse ? "已儲存變更" : "行程自動儲存在此瀏覽器"}
+              {loadingPlans ? "正在讀取共用行程" : savedPulse ? "已儲存並同步發布" : "共用行程每 5 秒自動更新"}
             </div>
           </section>
         </div>
@@ -207,7 +280,7 @@ export default function Home() {
           <span><i className="legend-office" /> 到公司</span>
           <span><i className="legend-away" /> 不在公司</span>
           <span><i className="legend-unset" /> 未設定</span>
-          <small>點選日期即可編輯</small>
+          <small>{isEditor ? "編輯模式：點選日期即可修改" : "公開瀏覽模式：輸入密碼後可編輯"}</small>
         </div>
 
         <div className={activeMonth === "all" ? "months-grid" : "months-grid single"}>
@@ -236,9 +309,9 @@ export default function Home() {
                       <button
                         type="button"
                         key={key}
-                        className={`day-cell ${status} ${visible ? "" : "dimmed"}`}
+                        className={`day-cell ${status} ${visible ? "" : "dimmed"} ${isEditor ? "" : "locked"}`}
                         onClick={() => openEditor(key)}
-                        aria-label={`編輯 ${displayDate(key)}，${status === "office" ? "到公司" : status === "away" ? "不在公司" : "未設定"}`}
+                        aria-label={`${isEditor ? "編輯" : "查看"} ${displayDate(key)}，${status === "office" ? "到公司" : status === "away" ? "不在公司" : "未設定"}`}
                       >
                         <span className="day-top">
                           <span className="day-number">{day}</span>
@@ -246,7 +319,7 @@ export default function Home() {
                         </span>
                         {plan?.city && <span className="day-city">{plan.city}</span>}
                         {plan?.work && <span className="day-work">{plan.work}</span>}
-                        {!plan && <span className="add-hint">＋ 填寫縣市／工作</span>}
+                        {!plan && <span className="add-hint">{isEditor ? "＋ 填寫縣市／工作" : "尚未安排"}</span>}
                       </button>
                     );
                   })}
@@ -273,13 +346,13 @@ export default function Home() {
               <legend>是否前往公司？</legend>
               <div className="status-options">
                 <button type="button" className={draft.office === "office" ? "selected office-choice" : "office-choice"} onClick={() => setDraft({ ...draft, office: "office" })}>
-                  <span>✓</span><strong>到公司</strong><small>Jerry 可直接看到</small>
+                  <span>✓</span><strong>到公司</strong>
                 </button>
                 <button type="button" className={draft.office === "away" ? "selected away-choice" : "away-choice"} onClick={() => setDraft({ ...draft, office: "away" })}>
-                  <span>—</span><strong>不在公司</strong><small>外出或其他安排</small>
+                  <span>—</span><strong>不在公司</strong>
                 </button>
                 <button type="button" className={draft.office === "unset" ? "selected unset-choice" : "unset-choice"} onClick={() => setDraft({ ...draft, office: "unset" })}>
-                  <span>?</span><strong>尚未確定</strong><small>之後再補</small>
+                  <span>?</span><strong>尚未確定</strong>
                 </button>
               </div>
             </fieldset>
@@ -298,12 +371,13 @@ export default function Home() {
             </div>
 
             <div className="modal-actions">
-              <button className="clear-button" type="button" onClick={clearPlan}>清除當日</button>
+              <button className="clear-button" type="button" onClick={clearPlan} disabled={isSaving}>清除當日</button>
               <div>
                 <button className="cancel-button" type="button" onClick={() => setSelectedDate(null)}>取消</button>
-                <button className="save-button" type="button" onClick={savePlan}>填入行事曆</button>
+                <button className="save-button" type="button" onClick={savePlan} disabled={isSaving}>{isSaving ? "正在發布…" : "儲存並發布"}</button>
               </div>
             </div>
+            {saveError && <p className="save-error" role="alert">{saveError}</p>}
           </section>
         </div>
       )}

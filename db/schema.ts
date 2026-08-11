@@ -1,4 +1,10 @@
-// Intentionally empty by default.
-// Add Drizzle tables here when the site actually needs a database.
-// See examples/d1/db/schema.ts for an opt-in example.
-export {};
+import { sql } from "drizzle-orm";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+export const calendarPlans = sqliteTable("calendar_plans", {
+  date: text("date").primaryKey(),
+  office: text("office").notNull().default("unset"),
+  city: text("city").notNull().default(""),
+  work: text("work").notNull().default(""),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
