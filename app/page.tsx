@@ -226,7 +226,7 @@ export default function Home() {
                   else setLoginOpen((current) => !current);
                   setAuthError("");
                 }}>
-                  <span aria-hidden="true">{isEditor ? "●" : "⌑"}</span> {isEditor ? "編輯模式 · 點此鎖定" : "輸入密碼"}
+                  <span aria-hidden="true">{isEditor ? "●" : "⌑"}</span> {isEditor ? "編輯模式 · 點此鎖定" : "編輯行程"}
                 </button>
                 {loginOpen && !isEditor && (
                   <form className="password-panel" onSubmit={unlockEditor}>
