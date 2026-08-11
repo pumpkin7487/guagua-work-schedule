@@ -12,11 +12,19 @@ type DayPlan = {
 
 type Plans = Record<string, DayPlan>;
 
-const YEAR = 2026;
-const START_MONTH = 7;
-const END_MONTH = 11;
 const STORAGE_KEY = "jerry-office-calendar-2026";
-const MONTH_NAMES = ["8 月", "9 月", "10 月", "11 月", "12 月"];
+const START_DATE = "2026-08-12";
+const MONTHS = Array.from({ length: 13 }, (_, index) => {
+  const monthIndex = 7 + index;
+  const year = 2026 + Math.floor(monthIndex / 12);
+  const month = monthIndex % 12;
+  return {
+    year,
+    month,
+    key: `${year}-${String(month + 1).padStart(2, "0")}`,
+    label: `${year}/${month + 1}`,
+  };
+});
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 const CITIES = [
   "臺北市", "新北市", "桃園市", "臺中市", "臺南市", "高雄市",
@@ -34,11 +42,11 @@ function dateKey(year: number, month: number, day: number) {
 function displayDate(key: string) {
   const [year, month, day] = key.split("-").map(Number);
   const date = new Date(year, month - 1, day);
-  return `${month} 月 ${day} 日（週${WEEKDAYS[date.getDay()]}）`;
+  return `${year} 年 ${month} 月 ${day} 日（週${WEEKDAYS[date.getDay()]}）`;
 }
 
-function monthDays(month: number) {
-  const count = new Date(YEAR, month + 1, 0).getDate();
+function monthDays(year: number, month: number) {
+  const count = new Date(year, month + 1, 0).getDate();
   return Array.from({ length: count }, (_, index) => index + 1);
 }
 
@@ -51,7 +59,7 @@ export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [draft, setDraft] = useState<DayPlan>(emptyPlan());
-  const [activeMonth, setActiveMonth] = useState<number | "all">("all");
+  const [activeMonth, setActiveMonth] = useState<string | "all">("all");
   const [filter, setFilter] = useState<OfficeStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [savedPulse, setSavedPulse] = useState(false);
@@ -94,8 +102,8 @@ export default function Home() {
   }, [plans]);
 
   const months = activeMonth === "all"
-    ? [7, 8, 9, 10, 11]
-    : [activeMonth];
+    ? MONTHS
+    : MONTHS.filter((month) => month.key === activeMonth);
 
   function openEditor(key: string) {
     setSelectedDate(key);
@@ -131,7 +139,7 @@ export default function Home() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, plan]) => [
         key,
-        plan.office === "office" ? "到公司" : plan.office === "away" ? "不進公司" : "未設定",
+        plan.office === "office" ? "到公司" : plan.office === "away" ? "不在公司" : "未設定",
         plan.city,
         plan.work,
       ]);
@@ -141,7 +149,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "Jerry_辦公室行事曆_2026.csv";
+    anchor.download = "瓜瓜的工作行程_2026-2027.csv";
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -157,11 +165,11 @@ export default function Home() {
     <main>
       <header className="hero">
         <div className="hero-inner">
-          <div className="eyebrow"><span className="eyebrow-dot" /> MATERIALS–KY · OFFICE PLAN</div>
+          <div className="eyebrow"><span className="eyebrow-dot" /> GUAGUA · WORK SCHEDULE</div>
           <div className="title-row">
             <div>
-              <h1>Jerry × 辦公室碰面排程</h1>
-              <p>2026 年 8 月 12 日 — 12 月 31 日</p>
+              <h1>瓜瓜的工作行程</h1>
+              <p>2026 年 8 月 12 日 — 2027 年 8 月 31 日</p>
             </div>
             <button className="export-button" type="button" onClick={exportCsv}>
               <span aria-hidden="true">↓</span> 匯出 CSV
@@ -175,7 +183,7 @@ export default function Home() {
             </div>
             <div className="stat-card stat-away">
               <span className="stat-icon" aria-hidden="true">●</span>
-              <div><strong>{stats.away}</strong><span>天不進公司</span></div>
+              <div><strong>{stats.away}</strong><span>天不在公司</span></div>
             </div>
             <div className="stat-card stat-planned">
               <span className="stat-icon" aria-hidden="true">✦</span>
@@ -193,8 +201,8 @@ export default function Home() {
         <div className="toolbar">
           <nav className="month-tabs" aria-label="選擇月份">
             <button className={activeMonth === "all" ? "active" : ""} onClick={() => setActiveMonth("all")}>全部</button>
-            {MONTH_NAMES.map((name, index) => (
-              <button key={name} className={activeMonth === index + 7 ? "active" : ""} onClick={() => setActiveMonth(index + 7)}>{name}</button>
+            {MONTHS.map((month) => (
+              <button key={month.key} className={activeMonth === month.key ? "active" : ""} onClick={() => setActiveMonth(month.key)}>{month.label}</button>
             ))}
           </nav>
           <div className="toolbar-actions">
@@ -205,7 +213,7 @@ export default function Home() {
             <select value={filter} onChange={(event) => setFilter(event.target.value as OfficeStatus | "all")} aria-label="篩選到公司狀態">
               <option value="all">全部狀態</option>
               <option value="office">到公司</option>
-              <option value="away">不進公司</option>
+              <option value="away">不在公司</option>
               <option value="unset">未設定</option>
             </select>
           </div>
@@ -215,28 +223,28 @@ export default function Home() {
       <section className="calendar-section">
         <div className="legend" aria-label="顏色圖例">
           <span><i className="legend-office" /> 到公司</span>
-          <span><i className="legend-away" /> 不進公司</span>
+          <span><i className="legend-away" /> 不在公司</span>
           <span><i className="legend-unset" /> 未設定</span>
           <small>點選日期即可編輯</small>
         </div>
 
         <div className={activeMonth === "all" ? "months-grid" : "months-grid single"}>
           {months.map((month) => {
-            const firstWeekday = new Date(YEAR, month, 1).getDay();
+            const firstWeekday = new Date(month.year, month.month, 1).getDay();
             return (
-              <article className="month-card" key={month}>
+              <article className="month-card" key={month.key}>
                 <div className="month-heading">
-                  <div><span>{String(month + 1).padStart(2, "0")}</span><h2>{month + 1} 月</h2></div>
-                  <p>{month === 7 ? "12 日起" : `${monthDays(month).length} 天`}</p>
+                  <div><span>{month.year} · {String(month.month + 1).padStart(2, "0")}</span><h2>{month.month + 1} 月</h2></div>
+                  <p>{month.key === "2026-08" ? "12 日起" : `${monthDays(month.year, month.month).length} 天`}</p>
                 </div>
                 <div className="weekday-row">
                   {WEEKDAYS.map((weekday) => <span key={weekday}>{weekday}</span>)}
                 </div>
                 <div className="days-grid">
                   {Array.from({ length: firstWeekday }, (_, index) => <span className="day-spacer" key={`spacer-${index}`} />)}
-                  {monthDays(month).map((day) => {
-                    const key = dateKey(YEAR, month, day);
-                    const disabled = month === START_MONTH && day < 12;
+                  {monthDays(month.year, month.month).map((day) => {
+                    const key = dateKey(month.year, month.month, day);
+                    const disabled = key < START_DATE;
                     const plan = plans[key];
                     const visible = isVisible(plan);
                     const status = plan?.office ?? "unset";
@@ -248,7 +256,7 @@ export default function Home() {
                         key={key}
                         className={`day-cell ${status} ${visible ? "" : "dimmed"}`}
                         onClick={() => openEditor(key)}
-                        aria-label={`編輯 ${displayDate(key)}，${status === "office" ? "到公司" : status === "away" ? "不進公司" : "未設定"}`}
+                        aria-label={`編輯 ${displayDate(key)}，${status === "office" ? "到公司" : status === "away" ? "不在公司" : "未設定"}`}
                       >
                         <span className="day-top">
                           <span className="day-number">{day}</span>
@@ -283,10 +291,10 @@ export default function Home() {
               <legend>是否前往公司？</legend>
               <div className="status-options">
                 <button type="button" className={draft.office === "office" ? "selected office-choice" : "office-choice"} onClick={() => setDraft({ ...draft, office: "office" })}>
-                  <span>✓</span><strong>會到公司</strong><small>可與 Jerry 碰面</small>
+                  <span>✓</span><strong>到公司</strong><small>Jerry 可直接看到</small>
                 </button>
                 <button type="button" className={draft.office === "away" ? "selected away-choice" : "away-choice"} onClick={() => setDraft({ ...draft, office: "away" })}>
-                  <span>—</span><strong>不進公司</strong><small>外出或其他安排</small>
+                  <span>—</span><strong>不在公司</strong><small>外出或其他安排</small>
                 </button>
                 <button type="button" className={draft.office === "unset" ? "selected unset-choice" : "unset-choice"} onClick={() => setDraft({ ...draft, office: "unset" })}>
                   <span>?</span><strong>尚未確定</strong><small>之後再補</small>
@@ -305,8 +313,8 @@ export default function Home() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="work">當天的工作</label>
-              <textarea id="work" value={draft.work} maxLength={200} onChange={(event) => setDraft({ ...draft, work: event.target.value })} rows={4} placeholder="例如：上午客戶會議、下午回公司與 Jerry 討論…" />
+              <label htmlFor="work">當天的工作內容／學校</label>
+              <textarea id="work" value={draft.work} maxLength={200} onChange={(event) => setDraft({ ...draft, work: event.target.value })} rows={4} placeholder="例如：師大附中研習、下午回公司與 Jerry 討論…" />
               <span className="character-count">{draft.work.length} / 200</span>
             </div>
 

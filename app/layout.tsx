@@ -9,22 +9,22 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogImage = `${protocol}://${host}/og.png`;
 
   return {
-    title: "Jerry × 辦公室碰面排程",
-    description: "2026 年 8 月 12 日到年底的辦公室行程規劃表。",
+    title: "瓜瓜的工作行程",
+    description: "2026 年 8 月 12 日到 2027 年 8 月 31 日的工作行程與到公司日期。",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: "Jerry × 辦公室碰面排程",
-      description: "一目瞭然地確認到公司日期、工作安排與所在縣市。",
+      title: "瓜瓜的工作行程",
+      description: "讓 Jerry 一目瞭然地確認瓜瓜到公司的日期、工作安排與所在縣市。",
       type: "website",
-      images: [{ url: ogImage, width: 1731, height: 909, alt: "Jerry × 辦公室碰面排程" }],
+      images: [{ url: ogImage, width: 1733, height: 908, alt: "瓜瓜的工作行程" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Jerry × 辦公室碰面排程",
-      description: "一目瞭然地確認到公司日期、工作安排與所在縣市。",
+      title: "瓜瓜的工作行程",
+      description: "讓 Jerry 一目瞭然地確認瓜瓜到公司的日期、工作安排與所在縣市。",
       images: [ogImage],
     },
   };
